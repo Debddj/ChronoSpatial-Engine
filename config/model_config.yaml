@@ -1,0 +1,12 @@
+model:
+  cnn_extractor:
+    input_shape: [3, 224, 224]
+    feature_dim: 128
+    confidence_threshold: 0.75
+  ann_regressor:
+    input_dim: 128
+    hidden_dims: [64, 32]
+    risk_threshold: 0.80
+spatial_hyperparameters:
+  grid_size: 16
+  max_objects: 50
