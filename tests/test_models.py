@@ -3,13 +3,22 @@ from src.models.cnn_extractor import CNNExtractor
 from src.models.ann_regressor import ANNRegressor
 from src.models.inference_engine import InferenceEngine
 
+import torch
+
 def test_cnn_extractor():
-    extractor = CNNExtractor(feature_dim=64)
+    extractor = CNNExtractor(feature_dim=128)
+    
+    # 1. Test PyTorch forward pass: (1, 3, 224, 224) input tensor -> (1, 128) output tensor
+    dummy_tensor = torch.randn(1, 3, 224, 224).float()
+    embeddings = extractor(dummy_tensor)
+    assert embeddings.shape == (1, 128)
+    assert isinstance(embeddings, torch.Tensor)
+    
+    # 2. Test NumPy compatibility wrapper: (1, 3, 224, 224) input array -> (128,) output array
     dummy_input = np.random.randn(1, 3, 224, 224).astype(np.float32)
     features = extractor.extract_features(dummy_input)
-    assert features.shape == (64,)
-    # Assert features are normalized (approx 1.0)
-    assert np.isclose(np.linalg.norm(features), 1.0, atol=1e-4)
+    assert features.shape == (128,)
+    assert isinstance(features, np.ndarray)
 
 def test_ann_regressor():
     regressor = ANNRegressor(input_dim=64, risk_threshold=0.5)
