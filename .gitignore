@@ -9,4 +9,4 @@ venv/
 .env
 .venv
 env/
-data/sample_feed.mp4
+data/*.mp4
