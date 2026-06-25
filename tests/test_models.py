@@ -34,7 +34,7 @@ def test_inference_engine():
     config = {
         "model": {
             "cnn_extractor": {"feature_dim": 128},
-            "ann_regressor": {"input_dim": 128, "risk_threshold": 0.8}
+            "ann_regressor": {"input_dim": 143, "risk_threshold": 0.8}
         }
     }
     engine = InferenceEngine(config)

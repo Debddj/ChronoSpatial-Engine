@@ -4,9 +4,11 @@ model:
     feature_dim: 128
     confidence_threshold: 0.75
   ann_regressor:
-    input_dim: 128
-    hidden_dims: [64, 32]
+    input_dim: 143
+    hidden_dims: [256, 128, 64]
+    dropout_rate: 0.3
     risk_threshold: 0.80
+    max_history: 5
 spatial_hyperparameters:
   grid_size: 16
   max_objects: 50
