@@ -1,9 +1,9 @@
 import time
+import os
 import numpy as np
-import torch
+import onnxruntime as ort
 from src.data_pipeline.transforms import preprocess_frame
-from src.models.cnn_extractor import CNNExtractor
-from src.models.ann_regressor import ANNRegressor, create_temporal_features
+from src.models.ann_regressor import create_temporal_features
 from src.utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -11,42 +11,62 @@ logger = get_logger(__name__)
 
 class InferenceEngine:
     def __init__(self, config):
-        cnn_cfg = config.get("model", {}).get("cnn_extractor", {})
-        ann_cfg = config.get("model", {}).get("ann_regressor", {})
+        model_cfg = config.get("model", {})
+        ann_cfg = model_cfg.get("ann_regressor", {})
         
-        self.extractor = CNNExtractor(feature_dim=cnn_cfg.get("feature_dim", 128))
-        self.regressor = ANNRegressor(
-            input_dim=ann_cfg.get("input_dim", 128 + 12),
-            hidden_dims=tuple(ann_cfg.get("hidden_dims", [256, 128, 64])),
-            dropout_rate=ann_cfg.get("dropout_rate", 0.3),
-            risk_threshold=ann_cfg.get("risk_threshold", 0.80)
-        )
+        # Resolve ONNX model path robustly
+        onnx_path = model_cfg.get("onnx_model_path", "models/chronospatial_unified_quantized.onnx")
+        if not os.path.exists(onnx_path):
+            base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+            onnx_path = os.path.join(base_dir, onnx_path)
+            
+        logger.info(f"Loading ONNX model from: {onnx_path}")
         
+        # Initialize ONNX Runtime Session (CPU Execution Provider)
+        self.session = ort.InferenceSession(onnx_path, providers=["CPUExecutionProvider"])
+        
+        self.risk_threshold = ann_cfg.get("risk_threshold", 0.80)
         self.max_history = ann_cfg.get("max_history", 5)
         self.temporal_buffer = []
         
-        logger.info("InferenceEngine successfully compiled and initialized.")
+        logger.info("InferenceEngine successfully compiled and initialized with ONNX Runtime.")
 
     def run_inference(self, frame, velocity_vectors=None, asset_distances=None):
         start_time = time.perf_counter()
         
+        # 1. Preprocess frame: (1, 3, 224, 224)
         preprocessed = preprocess_frame(frame)
-        spatial_features = self.extractor.extract_features(preprocessed)
         
+        # 2. Build temporal features: (15,)
         temporal_features = create_temporal_features(
             velocity_vectors=velocity_vectors,
             asset_distances=asset_distances,
             max_history=self.max_history
         )
         
-        combined_features = np.concatenate([spatial_features, temporal_features])
+        # 3. Add batch dimension: (1, 15)
+        temporal_features_batch = np.expand_dims(temporal_features, axis=0)
         
-        results = self.regressor.predict_risk(combined_features)
+        # 4. Execute ONNX session inference
+        inputs = {
+            "image": preprocessed.astype(np.float32),
+            "temporal_features": temporal_features_batch.astype(np.float32)
+        }
+        
+        outputs = self.session.run(None, inputs)
+        
+        # 5. Extract results
+        risk_score = float(outputs[0][0][0])
+        risk_score = max(0.0, min(1.0, risk_score))
+        is_anomaly = risk_score > self.risk_threshold
         
         elapsed_ms = (time.perf_counter() - start_time) * 1000
-        results["inference_time_ms"] = elapsed_ms
         
-        return results
+        return {
+            "risk_score": risk_score,
+            "is_anomaly": is_anomaly,
+            "inference_time_ms": elapsed_ms
+        }
 
     def reset_temporal_buffer(self):
         self.temporal_buffer = []

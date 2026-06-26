@@ -1,4 +1,5 @@
 model:
+  onnx_model_path: "models/chronospatial_unified_quantized.onnx"
   cnn_extractor:
     input_shape: [3, 224, 224]
     feature_dim: 128
