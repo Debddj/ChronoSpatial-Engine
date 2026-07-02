@@ -75,10 +75,28 @@ def create_unified_model(config=None):
     cnn_cfg = config.get("cnn_extractor", {})
     ann_cfg = config.get("ann_regressor", {})
     
-    return UnifiedChronoSpatialModel(
+    model = UnifiedChronoSpatialModel(
         cnn_feature_dim=cnn_cfg.get("feature_dim", 128),
         ann_input_dim=ann_cfg.get("input_dim", 143),
         ann_hidden_dims=tuple(ann_cfg.get("hidden_dims", [256, 128, 64])),
         ann_dropout_rate=ann_cfg.get("dropout_rate", 0.3),
         risk_threshold=ann_cfg.get("risk_threshold", 0.80)
     )
+    
+    # Check if a trained PyTorch model path is provided or exists at standard location
+    pt_path = config.get("pytorch_model_path", "models/chronospatial_unified.pt")
+    import os
+    if not os.path.exists(pt_path):
+        # Resolve path relative to project root
+        base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+        pt_path = os.path.join(base_dir, pt_path)
+        
+    if os.path.exists(pt_path):
+        import torch
+        logger.info(f"Loading trained PyTorch model weights from: {pt_path}")
+        try:
+            model.load_state_dict(torch.load(pt_path, map_location="cpu"))
+        except Exception as e:
+            logger.warning(f"Could not load state dict from {pt_path} (this is expected if running tests with custom configurations): {e}")
+        
+    return model
