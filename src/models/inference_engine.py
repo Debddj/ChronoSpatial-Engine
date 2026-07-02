@@ -77,12 +77,12 @@ class InferenceEngine:
                 grid_y = int(np.clip(cy * self.tracker.grid_size, 0, self.tracker.grid_size - 1))
                 
                 tracked_objects.append({
-                    "track_id": tr.track_id,
-                    "bbox": tr.bbox,
-                    "grid_cell": [grid_x, grid_y],
-                    "velocity": list(vel_hist[-1]),
+                    "track_id": int(tr.track_id),
+                    "bbox": [float(x) for x in tr.bbox],
+                    "grid_cell": [int(grid_x), int(grid_y)],
+                    "velocity": [float(x) for x in vel_hist[-1]],
                     "distance": float(dist_hist[-1]),
-                    "risk_score": risk_score # share overall frame risk score
+                    "risk_score": float(risk_score)
                 })
         else:
             # Automatic Object-Level Inference
@@ -125,12 +125,12 @@ class InferenceEngine:
                     grid_y = int(np.clip(cy * self.tracker.grid_size, 0, self.tracker.grid_size - 1))
                     
                     tracked_objects.append({
-                        "track_id": tr.track_id,
-                        "bbox": tr.bbox,
-                        "grid_cell": [grid_x, grid_y],
-                        "velocity": list(vel_hist[-1]),
+                        "track_id": int(tr.track_id),
+                        "bbox": [float(x) for x in tr.bbox],
+                        "grid_cell": [int(grid_x), int(grid_y)],
+                        "velocity": [float(x) for x in vel_hist[-1]],
                         "distance": float(dist_hist[-1]),
-                        "risk_score": obj_risk_score
+                        "risk_score": float(obj_risk_score)
                     })
                 
                 # Overall risk is the maximum risk score of tracked objects
