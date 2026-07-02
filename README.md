@@ -31,7 +31,7 @@ graph TD
 
     subgraph INF ["Core Inference Engine (src/models/inference_engine.py)"]
         CR[Frame Cropper] -->|Target Object Patches| TR[Transforms Preprocessing]
-        TR -->|Preprocessed Tensor [B, 3, 224, 224]| CNN[MobileNetV3 Backbone]
+        TR -->|"Preprocessed Tensor [B, 3, 224, 224]"| CNN[MobileNetV3 Backbone]
         CNN -->|128-d Spatial Embedding| CAT[Feature Concatenation]
         TH[Track Temporal History] -->|15-d Motion Vector| CAT
         CAT -->|Combined 143-d Input| ANN[ANN Risk Regressor]
